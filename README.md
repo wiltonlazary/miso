@@ -133,10 +133,10 @@ extra-deps:
 
 setup-info:
   ghcjs:
-	source:
-	  ghcjs-0.2.0.9006030_ghc-7.10.3:
-		 url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
-		 sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
+    source:
+      ghcjs-0.2.0.9006030_ghc-7.10.3:
+        url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+        sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
 ```
 
 Add a `cabal` file
@@ -167,7 +167,7 @@ Run `stack build` to get the static assets
 stack build
 ```
 
-See the result
+See the result(For linux, use `xdg-open`)
 ```
 open $(stack path --local-install-root)/bin/app.jsexe/index.html
 ```
@@ -256,23 +256,29 @@ mkDerivation {
 
 Write a `default.nix` (which calls `app.nix`), this fetches a recent version of `miso`.
 ```nix
-{ pkgs ? import ((import <nixpkgs> {}).fetchFromGitHub {
-	owner = "NixOS";
-	repo = "nixpkgs";
-	rev = "a0aeb23";
-	sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
-  }){}
-}:
+{ pkgs ? import <nixpkgs> {} }:
+
 let
-  result = import (pkgs.fetchFromGitHub {
-	owner = "dmjio";
-	repo = "miso";
-	sha256 = "1l1gwzzqlvvcmg70jjrwc5ijv1vb6y5ljqkh7rxxq7hkyxpjyx9q";
-	rev = "95f6bc9b1ae6230b110358a82b6a573806f272c2";
-  }) {};
-in pkgs.haskell.packages.ghcjs.callPackage ./app.nix {
-  miso = result.miso-ghcjs;
-}
+
+  pinnedPkgs = import (pkgs.fetchFromGitHub {
+    owner  = "NixOS";
+    repo   = "nixpkgs";
+    rev    = "a0aeb23";
+    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
+  }){};
+
+  miso = pinnedPkgs.haskell.packages.ghcjs.callCabal2nix "miso" (pkgs.fetchFromGitHub {
+    owner  = "dmjio";
+    repo   = "miso";
+    rev    = "bb2be3264ff3c6aa3b18e471d7cf04296024059b";
+    sha256 = "07k1rlvl9g027fp2khl9kiwla4rcn9sv8v2dzm0rzf149aal93vn";
+  }){};
+
+in
+
+  pinnedPkgs.haskell.packages.ghcjs.callPackage ./app.nix {
+    inherit miso;
+  }
 ```
 
 Add the source from [Sample Application](#sample-application) to `app/Main.hs`
